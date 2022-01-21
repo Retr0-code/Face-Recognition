@@ -3,33 +3,35 @@ import numpy as np
 from PIL import Image
 import os
 
-# Path for face image database
+# Path for face image dataset
 path = 'dataset'
 
+# Initialize recognition module and nodes
 recognizer = cv2.face.LBPHFaceRecognizer_create()
 detector = cv2.CascadeClassifier("haarcascade_frontalface_default.xml");
 
 # function to get the images and label data
 def getImagesAndLabels(path):
 
-    imagePaths = [os.path.join(path,f) for f in os.listdir(path)]     
-    faceSamples=[]
+    imagePaths = [os.path.join(path,f) for f in os.listdir(path)]   # Get all paths to all files in dataset folder
+    faceSamples = []    # Stores photos
     ids = []
 
     for imagePath in imagePaths:
 
-        PIL_img = Image.open(imagePath).convert('L') # convert it to grayscale
+        PIL_img = Image.open(imagePath).convert('L')    # Convert image to grayscale
         img_numpy = np.array(PIL_img,'uint8')
 
         id = int(os.path.split(imagePath)[-1].split(".")[1])
-        faces = detector.detectMultiScale(img_numpy)
+        faces = detector.detectMultiScale(img_numpy)    # Reconize faces from processed photo
 
         for (x,y,w,h) in faces:
-            faceSamples.append(img_numpy[y:y+h,x:x+w])
-            ids.append(id)
+            faceSamples.append(img_numpy[y:y+h,x:x+w])  # Append face samples to array
+            ids.append(id)      # Add face ID to ids
 
     return faceSamples,ids
 
+# Start training model
 print ("\n [INFO] Training faces. It will take a few seconds. Wait ...")
 faces,ids = getImagesAndLabels(path)
 recognizer.train(faces, np.array(ids))
