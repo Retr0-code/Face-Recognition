@@ -1,10 +1,9 @@
-import cv2
-import numpy as np
 import os
-import serial
-import sqlite3
-import time
 import re
+import cv2
+import time
+import sqlite3
+import numpy as np
 
 # Connect to a database
 db = sqlite3.connect("faceDataset.db")
