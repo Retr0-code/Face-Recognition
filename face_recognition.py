@@ -5,81 +5,81 @@ import time
 import sqlite3
 import numpy as np
 
-# Connect to a database
+# Подключение к базе данных 
 db = sqlite3.connect("faceDataset.db")
 cursor = db.cursor()
 
-
+# Регулярное выражение для очистки полученного имени из базы данных (для удаления спец. символов)
 SpecChars = r"[\'\(\)\,\][0-9]"
 
-# Initialize required modules
+# Инициализация требуемях модулей
 recognizer = cv2.face.LBPHFaceRecognizer_create()
-recognizer.read('trainer/trainer.yml')  # Get model
-cascadePath = "haarcascade_frontalface_default.xml" # Connect nodes
-faceCascade = cv2.CascadeClassifier(cascadePath)
+recognizer.read('trainer/trainer.yml')  # получение моделей обучения 
+cascadePath = "haarcascade_frontalface_default.xml" # путь до каскадной таблицы
+faceCascade = cv2.CascadeClassifier(cascadePath) # подключение нода(каскадная таблица)
 
-
+# шрифт для отображения в интерфейсе
 font = cv2.FONT_HERSHEY_SIMPLEX
 
-# Initialize and start realtime video capture
+# настройка параметров камеры 
 cam = cv2.VideoCapture(0)
-cam.set(3, 640) # set video widht
-cam.set(4, 480) # set video height
+cam.set(3, 640) # установка ширины
+cam.set(4, 480) # установка высоты 
 
-# Define min window size to be recognized as a face
+# установка минимальной ширины и высоты окна с выводом изображения 
 minW = 0.1*cam.get(3)
 minH = 0.1*cam.get(4)
 
-# Iniciate id counter
+# хранение id из модели 
 id = 1
 
 while True:
 
-    ret, img = cam.read()   # Read images from camera
-    gray = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)     # Convert image to grayscale
+    ret, img = cam.read()   # получение изображения с камеры 
+    gray = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)     # перевод изображения в монохром 
     faces = faceCascade.detectMultiScale( 
         gray,
         scaleFactor = 1.2,
         minNeighbors = 5,
         minSize = (int(minW), int(minH)),
-       )
+       ) # получение изображения лица 
 
     for(x,y,w,h) in faces:
-        # Get name from DB by id
-        [output] = cursor.execute(f"SELECT * FROM users WHERE id = '{id}'")
-        formatedOutput = re.sub(SpecChars, "", str(output))
         
-        # Show rectangle around a face
+        [output] = cursor.execute(f"SELECT * FROM users WHERE id = '{id}'") # получение имени из бд
+        formatedOutput = re.sub(SpecChars, "", str(output)) # форматирование полученного имени
+        
+        # показывает квадрат вокруг лица
         cv2.rectangle(img, (x,y), (x+w,y+h), (0,255,0), 2)
 
-        # Get result of recognizing in percentage ratio
+        # получение результата в процентном соотношении 
         formatedOutput, confidence = recognizer.predict(gray[y:y+h,x:x+w])
 
-        # Check if confidence is less them 100 ==> "0" is perfect match 
+        # проверка процентного соотношения
         if (confidence < 100):
-            confidence = "  {0}%".format(round(100 - confidence))   # Display percentage ratio
-            [outMain] = cursor.execute(f"SELECT * FROM users WHERE id = '{formatedOutput}'")    # Get name
+            confidence = "  {0}%".format(round(100 - confidence))   # отображение процентного соотношения 
+            [outMain] = cursor.execute(f"SELECT * FROM users WHERE id = '{formatedOutput}'")    # получение имени
             MainFormat = re.sub(SpecChars, "", str(outMain))
-            print(MainFormat)   # Display name
-            time.sleep(0.1)
+            print(MainFormat)   # вывод имени 
+            
 
-        # If face is not in DB 'Unknown' will be displayed
+        # Если лицо не в базе данных, то будет изображено "неизвестно"
         else:
-            confidence = "  {0}%".format(round(100 - confidence))
-            print("Unknown")
-            time.sleep(0.1)
+            confidence = "  {0}%".format(round(100 - confidence)) # вывод процентного соотношения 
+            print("Unknown") # вывод неизвестно
         
-        cv2.putText(img, str(id), (x+5,y-5), font, 1, (0, 255, 0), 2)   # Display id on rectangle
-        cv2.putText(img, str(confidence), (x+5,y+h-5), font, 1, (255,255,0), 1) # Display confidence level under the rectangle
+        cv2.putText(img, str(id), (x+5,y-5), font, 1, (0, 255, 0), 2)   # вывод id на рамке
+        cv2.putText(img, str(confidence), (x+5,y+h-5), font, 1, (255,255,0), 1) # вывод процентного соотношения под рамкой 
     
-    # Shows image from camera
+        time.sleep(0.1) # задержка считывания изображения 100 мс            
+    # вывод изображения с камеры 
     cv2.imshow('camera', img) 
 
-    k = cv2.waitKey(10) & 0xff # Press 'ESC' for exiting video
+    k = cv2.waitKey(10) & 0xff # нажмите 'ESC' для выхода из программы
     if k == 27:
         break
 
-# Do a bit of cleanup
+# закрытие программы 
 print("\n [INFO] Exiting Program and cleanup stuff")
-cam.release()
-cv2.destroyAllWindows()
+cam.release() # закрытие потока с камеры
+cv2.destroyAllWindows() # закрытие всех окон 
